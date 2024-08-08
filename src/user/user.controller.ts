@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
+import { CreateUserDto, UpdateUserDto } from './user.dto';
 import { User } from './user.entity';
 
 @Controller('users')
@@ -16,8 +17,8 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  async createUser(@Body() user: Partial<User>): Promise<User> {
-    return this.userService.createUser(user);
+  async createUser(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.userService.createUser(createUserDto);
   }
 
   @Get('search')
@@ -41,11 +42,11 @@ export class UserController {
   @Put(':id')
   async updateUser(
     @Param('id') id: string,
-    @Body() user: Partial<User>,
+    @Body() updateUserDto: UpdateUserDto,
   ): Promise<User> {
     const existingUser = await this.userService.findUserById(id);
     if (existingUser) {
-      return this.userService.createUser({ ...existingUser, ...user });
+      return this.userService.createUser({ ...existingUser, ...updateUserDto });
     }
     return null;
   }
