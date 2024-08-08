@@ -30,7 +30,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     UserModule,
     BlockModule,
     CacheModule.register({
-      ttl: 5,
+      ttl: parseInt(process.env.CACHE_TTL),
       max: 10,
       isGlobal: true,
     }),
