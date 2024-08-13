@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
-import { LessThanOrEqual, MoreThanOrEqual, FindOptionsWhere } from 'typeorm';
+import { LessThanOrEqual, MoreThanOrEqual, Between } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -33,34 +33,53 @@ export class UserService {
 
   async searchUsers(
     username?: string,
-    minAge?: number,
-    maxAge?: number,
+    minAge?: string,
+    maxAge?: string,
   ): Promise<User[]> {
-    const now = new Date();
-    const queryConditions: FindOptionsWhere<User> = {};
+    const currentYear = new Date().getFullYear();
+
+    let minBirthdate: Date | undefined;
+    let maxBirthdate: Date | undefined;
+
+    // Convert minAge and maxAge to numbers if they are provided
+    const minAgeNum = minAge !== undefined ? parseInt(minAge, 10) : undefined;
+    const maxAgeNum = maxAge !== undefined ? parseInt(maxAge, 10) : undefined;
+
+    // Check if minAge is a valid number
+    if (minAge !== undefined && (isNaN(minAgeNum) || minAgeNum < 0)) {
+      throw new Error('Invalid minAge provided');
+    }
+
+    // Check if maxAge is a valid number
+    if (maxAge !== undefined && (isNaN(maxAgeNum) || maxAgeNum < 0)) {
+      throw new Error('Invalid maxAge provided');
+    }
+
+    // Calculate birthdate range based on valid minAge and maxAge
+    if (minAgeNum !== undefined) {
+      minBirthdate = new Date(currentYear - minAgeNum, 0, 1);
+    }
+
+    if (maxAgeNum !== undefined) {
+      maxBirthdate = new Date(currentYear - maxAgeNum, 11, 31);
+    }
+
+    // Construct the query conditionally based on the provided parameters
+    const whereCondition: any = {};
 
     if (username) {
-      queryConditions.username = username;
+      whereCondition.username = username;
     }
 
-    if (minAge !== undefined) {
-      const minBirthdate = new Date(
-        now.getFullYear() - minAge,
-        now.getMonth(),
-        now.getDate(),
-      );
-      queryConditions.birthdate = LessThanOrEqual(minBirthdate);
+    if (minBirthdate && maxBirthdate) {
+      whereCondition.birthdate = Between(maxBirthdate, minBirthdate);
+    } else if (minBirthdate) {
+      whereCondition.birthdate = LessThanOrEqual(minBirthdate);
+    } else if (maxBirthdate) {
+      whereCondition.birthdate = MoreThanOrEqual(maxBirthdate);
     }
 
-    if (maxAge !== undefined) {
-      const maxBirthdate = new Date(
-        now.getFullYear() - maxAge,
-        now.getMonth(),
-        now.getDate(),
-      );
-      queryConditions.birthdate = MoreThanOrEqual(maxBirthdate);
-    }
-
-    return this.userRepository.find({ where: queryConditions });
+    // Execute the query with the constructed where condition
+    return this.userRepository.find({ where: whereCondition });
   }
 }

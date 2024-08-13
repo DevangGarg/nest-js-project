@@ -24,8 +24,8 @@ export class UserController {
   @Get('search')
   async searchUsers(
     @Query('username') username?: string,
-    @Query('minAge') minAge?: number,
-    @Query('maxAge') maxAge?: number,
+    @Query('minAge') minAge?: string,
+    @Query('maxAge') maxAge?: string,
   ): Promise<User[]> {
     return this.userService.searchUsers(username, minAge, maxAge);
   }
