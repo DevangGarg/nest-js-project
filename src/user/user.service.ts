@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -11,9 +11,22 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  //   async createUser(user: Partial<User>): Promise<User> {
+  //     const newUser = this.userRepository.create(user);
+  //     return this.userRepository.save(newUser);
+  //   }
+
   async createUser(user: Partial<User>): Promise<User> {
-    const newUser = this.userRepository.create(user);
-    return this.userRepository.save(newUser);
+    try {
+      const newUser = await this.userRepository.create(user);
+      return await this.userRepository.save(newUser);
+    } catch (error) {
+      if (error.code === '23505') {
+        // 23505 is the error code for unique constraint violation in PostgreSQL
+        throw new ConflictException('Username already exists');
+      }
+      throw error; // rethrow other errors
+    }
   }
 
   async findUserById(id: string): Promise<User> {
